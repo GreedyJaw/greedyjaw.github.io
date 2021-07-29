@@ -169,7 +169,36 @@
                console.log($scroll.scrollTotal);
             });
 
+            let touchStart = false;
+            let tmpScroll = 0;
+            let tmpScrollHorizontal = 0;
+            let partScroll = 0;
+            let partScrollHorizontal = 0;
+            let oddScrollHorizontal = 0;
+
+            $(document).on('touchstart', function (e){
+                touchStart = e.originalEvent.touches[0].clientY;
+            });
+
+            $(document).on('touchmove', function(e){
+                if(touchStart) {
+                    customScrollTouch(e);
+                }
+            });
+
+            $(document).on('touchend', function (e){
+                touchStart = false;
+                scroll += partScroll;
+                scrollHorizontal += partScrollHorizontal;
+                partScroll = tmpScroll = 0;
+                partScrollHorizontal = tmpScrollHorizontal = oddScrollHorizontal = 0;
+            });
+
             $(document).on('mousewheel wheel', function(e){
+                customScroll(e);
+            });
+
+            function customScroll(e) {
                 let wheelDelta = -getWheelDelta(e) / 4;
 
                 if($hTrack && !scrollHorizontal && wheelDelta < 0) {
@@ -244,7 +273,78 @@
                 $('.progress').css('width', ((scrollTotal * 100) / fullHeight) + '%');
 
                 $scroll.scrollTotal = scrollTotal;
-            });
+            }
+
+            function customScrollTouch(e) {
+                partScroll = -(e.originalEvent.touches[0].clientY - touchStart);
+
+                console.log(partScroll);
+
+                if($hTrack && !(scrollHorizontal + partScroll) && partScroll < 0) {
+                    $hTrack = null;
+                }
+
+                //
+                // if($hTrack && Math.abs(scrollHorizontal) >= $hTrack.width() - $(window).width() && partScroll > 0) {
+                //     horizontalScrollComplete.push(horizontalScrollIndex);
+                //     horizontalScrollIndex++;
+                //     scrollHorizontal = 0;
+                //     $hTrack = null;
+                // }
+
+                if($hTrack) {
+                    partScrollHorizontal = partScroll - oddScrollHorizontal;
+
+                    let dir = $hTrack.parent().data('dir') || 1;
+
+                    tmpScrollHorizontal = (partScrollHorizontal * dir) + scrollHorizontal;
+
+                    if((dir > 0 && tmpScrollHorizontal < 0) || (dir < 0 && tmpScrollHorizontal > 0)) {
+                        tmpScrollHorizontal = 0;
+                    }
+
+                    if(Math.abs(tmpScrollHorizontal) > $hTrack.width() - $(window).width()) {
+                        tmpScrollHorizontal = dir * ($hTrack.width() - $(window).width());
+                    }
+
+                    if(dir > 0) {
+                        $hTrack.css('left', -tmpScrollHorizontal);
+                    } else {
+                        $hTrack.css('right', tmpScrollHorizontal);
+                    }
+                } else {
+                    tmpScroll = partScroll + scroll;
+
+                    if(tmpScroll < 0) tmpScroll = 0;
+
+                    if(tmpScroll > $track.height() - $(window).height()) {
+                        tmpScroll = $track.height() - $(window).height();
+                    }
+
+                    $track.css('top', -tmpScroll);
+
+                    $horizontal.each(function(i) {
+                        // if($(this).offset().top >= 0 && partScroll < 0 && horizontalScrollComplete.indexOf(i) >= 0) {
+                        //     let dir = $(this).data('dir') || 1;
+                        //
+                        //     $hTrack = $(this).find('.horizontal-track');
+                        //     scrollHorizontal = dir * ($hTrack.width() - $(window).width());
+                        //     horizontalScrollComplete.pop();
+                        //     horizontalScrollIndex--;
+                        //
+                        //     scroll += $(this).offset().top;
+                        //     $track.css('top', -scroll);
+                        // }
+
+                        if($(this).offset().top <= 0 && horizontalScrollComplete.indexOf(i) < 0) {
+                            $hTrack = $(this).find('.horizontal-track');
+                            tmpScroll += $(this).offset().top;
+                            $track.css('top', -tmpScroll);
+                            oddScrollHorizontal = partScroll;
+                        }
+                    });
+                }
+            }
         });
 
         function getWheelDelta(event) {
