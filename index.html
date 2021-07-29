@@ -1,0 +1,254 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            *::-webkit-scrollbar {
+                display: none;
+            }
+
+            body {
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
+            }
+
+            .section {
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 50px;
+                font-family: Arial;
+            }
+
+            .section-1 {
+                background: red;
+            }
+
+            .section-2 {
+                background: green;
+            }
+
+            .section-3 {
+                background: #0a4b78;
+            }
+
+            .section-4 {
+                background: #0c88b4;
+            }
+
+            .section-5 {
+                background: yellow;
+            }
+
+            .section-6 {
+                background: gray;
+            }
+
+            .section-7 {
+                background: #6b003e;
+            }
+
+            .section-8 {
+                background: thistle;
+            }
+
+            .section-9 {
+                background: #e1a948;
+            }
+
+            .scroll {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .scroll-track {
+                position: absolute;
+                top: 0;
+                left: 0;
+                min-width: 100%;
+            }
+
+            .horizontal {
+                overflow: hidden;
+                width: 100vw;
+                height: 100vh;
+                position: relative;
+            }
+
+            .horizontal-track {
+                display: flex;
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+            }
+
+            .horizontal[data-dir="-1"] .horizontal-track {
+                left: auto;
+                right: 0;
+            }
+
+            .horizontal-track .section {
+                width: 100vw;
+            }
+
+            .progress-bar {
+                position: fixed;
+                bottom: 30px;
+                left: 30px;
+                right: 30px;
+                height: 3px;
+                background: #fff;
+                z-index: 1;
+                overflow: hidden;
+            }
+
+            .progress {
+                width: 0%;
+                background: blue;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div class="scroll">
+            <div class="scroll-track">
+                <div class="section section-1">Section 1</div>
+                <div class="section section-2">Section 2</div>
+                <div class="section section-3">Section 3</div>
+                <div class="horizontal" data-dir="1">
+                    <div class="horizontal-track">
+                        <div class="section section-4">Horizontal Section 4</div>
+                        <div class="section section-6">Horizontal Section 6</div>
+                        <div class="section section-5">Horizontal Section 5</div>
+                    </div>
+                </div>
+                <div class="section section-7">Horizontal Section 7</div>
+                <div class="section section-8">Horizontal Section 8</div>
+                <div class="horizontal" data-dir="-1">
+                    <div class="horizontal-track">
+                        <div class="section section-4">Horizontal Section 4</div>
+                        <div class="section section-6">Horizontal Section 6</div>
+                        <div class="section section-5">Horizontal Section 5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            let scroll = $(document).scrollTop();
+            let $scroll = $('.scroll');
+            let $track = $('.scroll-track');
+            let $horizontal = $('.horizontal');
+            let horizontalScrollComplete = [];
+            let horizontalScrollIndex = 0;
+            let scrollHorizontal = 0;
+            let $hTrack = null;
+            let scrollTotal = 0;
+            let fullHeight = $track.height() - $(window).height();
+
+            $scroll.scrollTotal = scrollTotal;
+
+            $horizontal.each(function(){
+                fullHeight += $(this).find('.horizontal-track').width() - $(window).width();
+            });
+
+            $scroll.on('custom-scroll', function(e) {
+               console.log($scroll.scrollTotal);
+            });
+
+            $(document).on('mousewheel wheel', function(e){
+                let wheelDelta = -getWheelDelta(e) / 4;
+
+                if($hTrack && !scrollHorizontal && wheelDelta < 0) {
+                    $hTrack = null;
+                }
+
+                if($hTrack && Math.abs(scrollHorizontal) >= $hTrack.width() - $(window).width() && wheelDelta > 0) {
+                    horizontalScrollComplete.push(horizontalScrollIndex);
+                    horizontalScrollIndex++;
+                    scrollHorizontal = 0;
+                    $hTrack = null;
+                }
+
+                if($hTrack) {
+                    let dir = $hTrack.parent().data('dir') || 1;
+
+                    scrollHorizontal += wheelDelta * dir;
+
+                    if((dir > 0 && scrollHorizontal < 0) || (dir < 0 && scrollHorizontal > 0)) {
+                        scrollHorizontal = 0;
+                    }
+
+                    if(Math.abs(scrollHorizontal) > $hTrack.width() - $(window).width()) {
+                        scrollHorizontal = dir * ($hTrack.width() - $(window).width());
+                    }
+
+                    if(dir > 0) {
+                        $hTrack.css('left', -scrollHorizontal);
+                    } else {
+                        $hTrack.css('right', scrollHorizontal);
+                    }
+                } else {
+                    scroll += wheelDelta;
+
+                    if(scroll < 0) scroll = 0;
+
+                    if(scroll > $track.height() - $(window).height()) {
+                        scroll = $track.height() - $(window).height();
+                    }
+
+                    $track.css('top', -scroll);
+
+                    $horizontal.each(function(i) {
+                        if($(this).offset().top >= 0 && wheelDelta < 0 && horizontalScrollComplete.indexOf(i) >= 0) {
+                            let dir = $(this).data('dir') || 1;
+
+                            $hTrack = $(this).find('.horizontal-track');
+                            scrollHorizontal = dir * ($hTrack.width() - $(window).width());
+                            horizontalScrollComplete.pop();
+                            horizontalScrollIndex--;
+
+                            scroll += $(this).offset().top;
+                            $track.css('top', -scroll);
+                        }
+
+                        if($(this).offset().top <= 0 && horizontalScrollComplete.indexOf(i) < 0) {
+                            $hTrack = $(this).find('.horizontal-track');
+                            scroll += $(this).offset().top;
+                            $track.css('top', -scroll);
+                        }
+                    });
+                }
+
+                scrollTotal = scroll + Math.abs(scrollHorizontal);
+
+                horizontalScrollComplete.forEach(i => {
+                    scrollTotal += $horizontal.eq(i).find('.horizontal-track').width() - $(window).width();
+                });
+
+                $('.scroll').trigger('custom-scroll', 'test');
+
+                $('.progress').css('width', ((scrollTotal * 100) / fullHeight) + '%');
+
+                $scroll.scrollTotal = scrollTotal;
+            });
+        });
+
+        function getWheelDelta(event) {
+            return event.wheelDelta || -event.detail || event.originalEvent.wheelDelta || -event.originalEvent.detail || -(event.originalEvent.deltaY * 25) || null;
+        }
+    </script>
+</html>
