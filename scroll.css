@@ -1,0 +1,39 @@
+.scroll {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+}
+
+.horizontal {
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+.horizontal-track {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+}
+
+.horizontal[data-dir="-1"] .horizontal-track {
+    left: auto;
+    right: 0;
+}
