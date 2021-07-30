@@ -28,6 +28,8 @@
         refreshHeight();
 
         $scroll.scrollTotal = scrollTotal;
+        $scroll.scrollHorizontal = scrollHorizontal;
+        $scroll.scrollVertical = scrollVertical;
 
         $(document).bind('mousewheel wheel', handleMouseWheel);
 
@@ -99,14 +101,17 @@
                 scrollTotal += horizontals[i].$track.width() - $(window).width();
             });
 
-            $scroll.trigger('custom-scroll', 'test');
-
             $scroll.scrollTotal = scrollTotal;
+            $scroll.scrollHorizontal = scrollHorizontal;
+            $scroll.scrollVertical = scrollVertical;
+
+            $scroll.trigger('custom-scroll');
         }
 
         let touchStart = false;
         let tmpScroll = 0;
         let tmpScrollHorizontal = 0;
+        let tmpScrollTotal = 0;
         let partScroll = 0;
         let partScrollHorizontal = 0;
         let oddScrollHorizontal = 0;
@@ -199,6 +204,18 @@
                     }
                 });
             }
+
+            tmpScrollTotal = tmpScroll + Math.abs(tmpScrollHorizontal);
+
+            horizontalScrollComplete.forEach(i => {
+                tmpScrollTotal += horizontals[i].$track.width() - $(window).width();
+            });
+
+            $scroll.scrollTotal = tmpScrollTotal;
+            $scroll.scrollHorizontal = tmpScrollHorizontal;
+            $scroll.scrollVertical = tmpScroll;
+
+            $scroll.trigger('custom-scroll');
         }
 
         function refreshHeight() {

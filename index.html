@@ -155,7 +155,7 @@
         </div>
     </body>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="/scroll.js"></script>
+    <script src="scroll.js"></script>
     <script>
         $(document).ready(function(){
             let $scroll = $.fn.customScroll();
@@ -163,9 +163,6 @@
             $scroll.on('custom-scroll', function(e) {
                 $('.progress').css('width', (($scroll.scrollTotal * 100) / $scroll.fullHeight) + '%')
             });
-
-
-
         });
     </script>
 </html>
