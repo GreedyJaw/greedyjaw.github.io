@@ -134,16 +134,7 @@
             <div class="scroll-track">
                 <div class="section section-1">Section 1</div>
                 <div class="section section-2">Section 2</div>
-                <div class="section section-3">Section 3</div>
-                <div class="section section-1">Section 1</div>
-                <div class="section section-2">Section 2</div>
-                <div class="section section-3">Section 3</div>
-                <div class="section section-1">Section 1</div>
-                <div class="section section-2">Section 2</div>
-                <div class="section section-3">Section 3</div>
-                <div class="section section-1">Section 1</div>
-                <div class="section section-2">Section 2</div>
-                <div class="section section-3">Section 3</div>
+                <div class="section section-7">Section 7</div>
                 <div class="horizontal" data-dir="1">
                     <div class="horizontal-track">
                         <div class="section section-4">Horizontal Section 4</div>
@@ -164,13 +155,10 @@
         </div>
     </body>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="/scroll.js"></script>
+    <script src="./scroll.js"></script>
     <script>
         $(document).ready(function(){
-            let $scroll = $.fn.customScroll({
-                verticalSpeed: 100,
-                horizontalSpeed: 100
-            });
+            let $scroll = $.fn.customScroll();
 
             $scroll.on('custom-scroll', function(e) {
                 $('.progress').css('width', (($scroll.scrollTotal * 100) / $scroll.fullHeight) + '%')

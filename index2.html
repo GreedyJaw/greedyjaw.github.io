@@ -158,32 +158,32 @@
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    function test(e) {
-        e = window.event || e;
-        e.preventDefault();
+    function disableScroll($el) {
+        $el.bind('mousewheel DOMMouseScroll touchstart touchend touchmove', function(e) {
+            e = window.event || e;
+            e.preventDefault();
+        }, false);
+    }
+
+    function enableScroll($el) {
+        $el.unbind('mousewheel DOMMouseScroll touchstart touchend touchmove');
     }
 
     $(document).ready(function(){
         let $scroll = $('.scroll');
         let horizontalEnabled = false;
 
-        $scroll[0].addEventListener('mousewheel', test, false);
-        $scroll[0].addEventListener("DOMMouseScroll", test , false);
-        $scroll[0].addEventListener("touchstart", test , false);
-        $scroll[0].addEventListener("touchend", test , false);
-        $scroll[0].addEventListener("touchmove", test , false);
-        // $scroll[0].addEventListener('mousewheel', test, false);
-
         $scroll.on('scroll', function(e){
             $('.horizontal').each(function(){
-                if(!scrollEnded($(this)) && $scroll.scrollTop() >= $(this)[0].offsetTop && !horizontalEnabled){
-                    // disableScrolling($(this)[0].offsetTop);
-                    // enableHorizontalScrolling($(this));
+                if(!scrollEnded($(this)) && $scroll.scrollTop() >= $(this)[0].offsetTop){
+                    $scroll.scrollTop($(this)[0].offsetTop);
+                    disableScroll($scroll);
+                    enableHorizontalScroll($(this));
                 }
 
                 if(scrollEnded($(this)) && $scroll.scrollTop() <= $(this)[0].offsetTop) {
-                    disableScrolling($(this)[0].offsetTop);
-                    enableHorizontalScrolling($(this));
+
+                    // enableHorizontalScrolling($(this));
                 }
             });
         });
@@ -196,48 +196,24 @@
             return false;
         }
 
-        function enableHorizontalScrolling($el) {
-            horizontalEnabled = true;
-
-            $scroll.on('mousewheel wheel', function(e){
+        function enableHorizontalScroll($el) {
+            $el.on('mousewheel wheel', function(e){
                 let delta = getWheelDelta(e);
                 let dir = delta < 0 ? 1 : -1;
 
                 if(dir < 0 && !$el.scrollLeft()) {
-                    enableScrolling($scroll);
-                    disableHorizontalScrolling();
+                    enableScroll($scroll);
+                    disableScroll($el);
                 }
 
                 $el.scrollLeft($el.scrollLeft() + (35 * dir));
 
-                if(dir > 0 && $el.scrollLeft() + $(window).width() >= $el.find('.horizontal-track').width()) {
-                    enableScrolling($scroll);
-                    disableHorizontalScrolling();
+                if(dir > 0 && $el.scrollLeft() + $(window).width() + 10 >= $el.find('.horizontal-track').width()) {
+
+                    enableScroll($scroll);
+                    disableScroll($el);
                 }
             });
-        }
-
-        function disableHorizontalScrolling() {
-            horizontalEnabled = false;
-
-            $scroll.unbind('mousewheel');
-        }
-
-        function disableScrolling(y, x){
-            if(x === undefined) {
-                x=$scroll.scrollLeft();
-            }
-
-            if(y === undefined) {
-                y=$scroll.scrollTop();
-            }
-            $scroll[0].onscroll=function(){
-                $scroll[0].scrollTo(x, y);
-            };
-        }
-
-        function enableScrolling($el){
-            $scroll[0].onscroll=function(){};
         }
 
         function getWheelDelta(event) {
