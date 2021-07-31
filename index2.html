@@ -187,7 +187,7 @@
         function enableHorizontalScrolling($el) {
             horizontalEnabled = true;
 
-            $scroll.on('mousewheel', function(e){
+            $scroll.on('mousewheel wheel', function(e){
                 let delta = getWheelDelta(e);
                 let dir = delta < 0 ? 1 : -1;
 
