@@ -158,15 +158,24 @@
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    function test(e) {
+        e = window.event || e;
+        e.preventDefault();
+    }
+
     $(document).ready(function(){
         let $scroll = $('.scroll');
         let horizontalEnabled = false;
 
+        $scroll[0].addEventListener('mousewheel', test, false);
+        $scroll[0].addEventListener("DOMMouseScroll", testgit , false);
+        // $scroll[0].addEventListener('mousewheel', test, false);
+
         $scroll.on('scroll', function(e){
             $('.horizontal').each(function(){
                 if(!scrollEnded($(this)) && $scroll.scrollTop() >= $(this)[0].offsetTop && !horizontalEnabled){
-                    disableScrolling($(this)[0].offsetTop);
-                    enableHorizontalScrolling($(this));
+                    // disableScrolling($(this)[0].offsetTop);
+                    // enableHorizontalScrolling($(this));
                 }
 
                 if(scrollEnded($(this)) && $scroll.scrollTop() <= $(this)[0].offsetTop) {
