@@ -8,8 +8,8 @@
                 horizontal: '.horizontal',
                 horizontalTrack: '.horizontal-track'
             },
-            verticalSpeed: 150,
-            horizontalSpeed: 150
+            verticalSpeed: 50,
+            horizontalSpeed: 50
         }, options);
 
         let $scroll = $(o.selectors.scroll);
@@ -24,6 +24,10 @@
         let horizontalScrollIndex = 0;
         let scrollTotal = 0;
         let fullHeight = 0;
+        let trackHeight = $track.height();
+        let windowHeight = $(window).height();
+        let timer = 0;
+        let moveYDisabled = false;
 
         refreshHeight();
 
@@ -34,10 +38,12 @@
         $(document).bind('mousewheel wheel', handleMouseWheel);
 
         function handleMouseWheel(e) {
-            let wheelDelta = -((getWheelDelta(e) / 4) / 100);
+            let wheelDelta = -getWheelDelta(e);
+            let dir = wheelDelta < 0 ? -1 : 1;
 
             if($hTrack && !scrollHorizontal && wheelDelta < 0) {
                 $hTrack = null;
+                moveYDisabled = false;
             }
 
             if($hTrack && Math.abs(scrollHorizontal) >= $hTrack.width() - $(window).width() && wheelDelta > 0) {
@@ -45,54 +51,31 @@
                 horizontalScrollIndex++;
                 scrollHorizontal = 0;
                 $hTrack = null;
+                moveYDisabled = false;
             }
 
             if($hTrack) {
-                let dir = $hTrack.parent().data('dir') || 1;
+                let dirX = $hTrack.parent().data('dir') || 1;
 
-                scrollHorizontal += wheelDelta * dir * o.horizontalSpeed;
+                scrollHorizontal += dirX * dir * o.horizontalSpeed;
 
-                if((dir > 0 && scrollHorizontal < 0) || (dir < 0 && scrollHorizontal > 0)) {
+                if((dirX > 0 && scrollHorizontal < 0) || (dirX < 0 && scrollHorizontal > 0)) {
                     scrollHorizontal = 0;
                 }
 
                 if(Math.abs(scrollHorizontal) > $hTrack.width() - $(window).width()) {
-                    scrollHorizontal = dir * ($hTrack.width() - $(window).width());
+                    scrollHorizontal = dirX * ($hTrack.width() - $(window).width());
                 }
 
-                if(dir > 0) {
+                if(dirX > 0) {
                     $hTrack.css('left', -scrollHorizontal);
                 } else {
                     $hTrack.css('right', scrollHorizontal);
                 }
             } else {
-                scrollVertical += wheelDelta * o.verticalSpeed;
+                let tmp = dir * o.verticalSpeed;
 
-                if(scrollVertical < 0) scrollVertical = 0;
-
-                if(scrollVertical > $track.height() - $(window).height()) {
-                    scrollVertical = $track.height() - $(window).height();
-                }
-
-                $track.css('top', -scrollVertical);
-
-                horizontals.forEach(function(h, i) {
-                    if(h.$base.offset().top >= 0 && wheelDelta < 0 && horizontalScrollComplete.indexOf(i) >= 0) {
-                        $hTrack = h.$track;
-                        scrollHorizontal = h.dir * ($hTrack.width() - $(window).width());
-                        horizontalScrollComplete.pop();
-                        horizontalScrollIndex--;
-
-                        scrollVertical += h.$base.offset().top;
-                        $track.css('top', -scrollVertical);
-                    }
-
-                    if(h.$base.offset().top <= 0 && horizontalScrollComplete.indexOf(i) < 0) {
-                        $hTrack = h.$track;
-                        scrollVertical += h.$base.offset().top;
-                        $track.css('top', -scrollVertical);
-                    }
-                });
+                moveY(tmp);
             }
 
             scrollTotal = scrollVertical + Math.abs(scrollHorizontal);
@@ -100,12 +83,47 @@
             horizontalScrollComplete.forEach(i => {
                 scrollTotal += horizontals[i].$track.width() - $(window).width();
             });
+        }
 
-            $scroll.scrollTotal = scrollTotal;
-            $scroll.scrollHorizontal = scrollHorizontal;
-            $scroll.scrollVertical = scrollVertical;
+        function moveY(target) {
+            if(target && !moveYDisabled) {
+                let dir = target < 0 ? -1 : 1;
 
-            $scroll.trigger('custom-scroll');
+                scrollVertical+=dir;
+
+                if(scrollVertical < 0) scrollVertical = 0;
+
+                if(scrollVertical > trackHeight - windowHeight) {
+                    scrollVertical = trackHeight - windowHeight;
+                }
+
+                horizontals.forEach(function(h, i) {
+                    if(h.$base[0].offsetTop >= scrollVertical && dir < 0 && horizontalScrollComplete.indexOf(i) >= 0) {
+                        $hTrack = h.$track;
+                        horizontalScrollComplete.pop();
+                        horizontalScrollIndex--;
+
+                        scrollHorizontal = h.dir * ($hTrack.width() - $(window).width());
+                        scrollVertical = h.$base[0].offsetTop;
+
+                        moveYDisabled = true;
+                    }
+
+                    if(h.$base[0].offsetTop <= scrollVertical && horizontalScrollComplete.indexOf(i) < 0) {
+                        $hTrack = h.$track;
+                        scrollVertical = h.$base[0].offsetTop;
+                        moveYDisabled = true;
+                    }
+                });
+
+                target -= dir;
+
+                $track.css('top', -scrollVertical);
+
+                timer = setTimeout(function(){
+                    moveY(target);
+                }, 1);
+            }
         }
 
         let touchStart = false;
