@@ -15,7 +15,7 @@
         let $scroll = $(o.selectors.scroll);
         let $track = $(o.selectors.scrollTrack);
         let $horizontal = $(o.selectors.horizontal);
-        let $hTrack = null;
+        let activeHorizontal = null;
 
         let horizontals = [];
         let scrollVertical = $(document).scrollTop();
@@ -26,7 +26,7 @@
         let fullHeight = 0;
         let trackHeight = $track.height();
         let windowHeight = $(window).height();
-        let timer = 0;
+        let windowWidth = $(window).width();
         let moveYDisabled = false;
 
         refreshHeight();
@@ -41,48 +41,26 @@
             let wheelDelta = -getWheelDelta(e);
             let dir = wheelDelta < 0 ? -1 : 1;
 
-            if($hTrack && !scrollHorizontal && wheelDelta < 0) {
-                $hTrack = null;
+            if(activeHorizontal && !scrollHorizontal && dir < 0) {
+                activeHorizontal = null;
                 moveYDisabled = false;
             }
 
-            if($hTrack && Math.abs(scrollHorizontal) >= $hTrack.width() - $(window).width() && wheelDelta > 0) {
+            if(activeHorizontal && Math.abs(scrollHorizontal) >= activeHorizontal.trackWidth - windowWidth && dir > 0) {
                 horizontalScrollComplete.push(horizontalScrollIndex);
                 horizontalScrollIndex++;
                 scrollHorizontal = 0;
-                $hTrack = null;
+                activeHorizontal = null;
                 moveYDisabled = false;
             }
 
-            if($hTrack) {
-                let dirX = $hTrack.parent().data('dir') || 1;
-
-                scrollHorizontal += dirX * dir * o.horizontalSpeed;
-
-                if((dirX > 0 && scrollHorizontal < 0) || (dirX < 0 && scrollHorizontal > 0)) {
-                    scrollHorizontal = 0;
-                }
-
-                if(Math.abs(scrollHorizontal) > $hTrack.width() - $(window).width()) {
-                    scrollHorizontal = dirX * ($hTrack.width() - $(window).width());
-                }
-
-                if(dirX > 0) {
-                    $hTrack.css('left', -scrollHorizontal);
-                } else {
-                    $hTrack.css('right', scrollHorizontal);
-                }
+            if(activeHorizontal) {
+                let tmp = activeHorizontal.dir * dir * o.horizontalSpeed;
+                moveX(tmp, activeHorizontal.dir);
             } else {
                 let tmp = dir * o.verticalSpeed;
-
                 moveY(tmp);
             }
-
-            scrollTotal = scrollVertical + Math.abs(scrollHorizontal);
-
-            horizontalScrollComplete.forEach(i => {
-                scrollTotal += horizontals[i].$track.width() - $(window).width();
-            });
         }
 
         function moveY(target) {
@@ -99,18 +77,18 @@
 
                 horizontals.forEach(function(h, i) {
                     if(h.$base[0].offsetTop >= scrollVertical && dir < 0 && horizontalScrollComplete.indexOf(i) >= 0) {
-                        $hTrack = h.$track;
+                        activeHorizontal = horizontals[i];
                         horizontalScrollComplete.pop();
                         horizontalScrollIndex--;
 
-                        scrollHorizontal = h.dir * ($hTrack.width() - $(window).width());
+                        scrollHorizontal = h.dir * (h.trackWidth - windowWidth);
                         scrollVertical = h.$base[0].offsetTop;
 
                         moveYDisabled = true;
                     }
 
-                    if(h.$base[0].offsetTop <= scrollVertical && horizontalScrollComplete.indexOf(i) < 0) {
-                        $hTrack = h.$track;
+                    if(h.$base[0].offsetTop <= Math.ceil(scrollVertical) && horizontalScrollComplete.indexOf(i) < 0) {
+                        activeHorizontal = horizontals[i];
                         scrollVertical = h.$base[0].offsetTop;
                         moveYDisabled = true;
                     }
@@ -120,12 +98,45 @@
 
                 $track.css('top', -scrollVertical);
 
-                timer = setTimeout(function(){
+                updateTotals(scrollHorizontal, scrollVertical);
+
+                setTimeout(function(){
                     moveY(target);
                 }, 1);
             }
         }
 
+        function moveX(target, dirX) {
+            if(target && activeHorizontal) {
+                let dir = target < 0 ? -1 : 1;
+
+                scrollHorizontal += dir;
+
+                if((dirX > 0 && scrollHorizontal < 0) || (dirX < 0 && scrollHorizontal > 0)) {
+                    scrollHorizontal = 0;
+                }
+
+                if(Math.abs(scrollHorizontal) > activeHorizontal.trackWidth - windowWidth) {
+                    scrollHorizontal = dirX * (activeHorizontal.trackWidth - windowWidth);
+                }
+
+                target -= dir;
+
+                if(dirX > 0) {
+                    activeHorizontal.$track.css('left', -scrollHorizontal);
+                } else {
+                    activeHorizontal.$track.css('right', scrollHorizontal);
+                }
+
+                updateTotals(scrollHorizontal, scrollVertical);
+
+                setTimeout(function(){
+                    moveX(target, dirX);
+                }, 1);
+            }
+        }
+
+        // Touch part
         let touchStart = false;
         let tmpScroll = 0;
         let tmpScrollHorizontal = 0;
@@ -160,53 +171,51 @@
         function customScrollTouch(e) {
             partScroll = -(e.originalEvent.touches[0].clientY - touchStart);
 
-            if($hTrack && !tmpScrollHorizontal && partScroll < 0) {
-                $hTrack = null;
+            if(activeHorizontal && !tmpScrollHorizontal && partScroll < 0) {
+                activeHorizontal = null;
             }
 
-            if($hTrack && Math.abs(tmpScrollHorizontal) >= $hTrack.width() - $(window).width() && partScroll > 0) {
+            if(activeHorizontal && Math.abs(tmpScrollHorizontal) >= activeHorizontal.trackWidth - windowWidth && partScroll > 0) {
                 horizontalScrollComplete.push(horizontalScrollIndex);
                 horizontalScrollIndex++;
                 scrollHorizontal = tmpScrollHorizontal = 0;
-                $hTrack = null;
+                activeHorizontal = null;
             }
 
-            if($hTrack) {
+            if(activeHorizontal) {
                 oddScroll = partScroll;
                 partScrollHorizontal = partScroll - oddScrollHorizontal;
 
-                let dir = $hTrack.parent().data('dir') || 1;
+                tmpScrollHorizontal = (partScrollHorizontal * activeHorizontal.dir) + scrollHorizontal;
 
-                tmpScrollHorizontal = (partScrollHorizontal * dir) + scrollHorizontal;
-
-                if((dir > 0 && tmpScrollHorizontal < 0) || (dir < 0 && tmpScrollHorizontal > 0)) {
+                if((activeHorizontal.dir > 0 && tmpScrollHorizontal < 0) || (activeHorizontal.dir < 0 && tmpScrollHorizontal > 0)) {
                     tmpScrollHorizontal = 0;
                 }
 
-                if(Math.abs(tmpScrollHorizontal) > $hTrack.width() - $(window).width()) {
-                    tmpScrollHorizontal = dir * ($hTrack.width() - $(window).width());
+                if(Math.abs(tmpScrollHorizontal) > activeHorizontal.trackWidth - windowWidth) {
+                    tmpScrollHorizontal = activeHorizontal.dir * (activeHorizontal.trackWidth - windowWidth);
                 }
 
-                if(dir > 0) {
-                    $hTrack.css('left', -tmpScrollHorizontal);
+                if(activeHorizontal.dir > 0) {
+                    activeHorizontal.$track.css('left', -tmpScrollHorizontal);
                 } else {
-                    $hTrack.css('right', tmpScrollHorizontal);
+                    activeHorizontal.$track.css('right', tmpScrollHorizontal);
                 }
             } else {
                 tmpScroll = partScroll - oddScroll + scrollVertical;
 
                 if(tmpScroll < 0) tmpScroll = 0;
 
-                if(tmpScroll > $track.height() - $(window).height()) {
-                    tmpScroll = $track.height() - $(window).height();
+                if(tmpScroll > trackHeight - windowHeight) {
+                    tmpScroll = trackHeight - windowHeight;
                 }
 
                 $track.css('top', -tmpScroll);
 
                 horizontals.forEach((h, i) => {
                     if(h.$base.offset().top >= 0 && partScroll < 0 && horizontalScrollComplete.indexOf(i) >= 0) {
-                        $hTrack = h.$track
-                        tmpScrollHorizontal = scrollHorizontal= h.dir * ($hTrack.width() - $(window).width());
+                        activeHorizontal = horizontals[i];
+                        tmpScrollHorizontal = scrollHorizontal= h.dir * (h.trackWidth - windowWidth);
                         horizontalScrollComplete.pop();
                         horizontalScrollIndex--;
 
@@ -215,7 +224,7 @@
                     }
 
                     if(h.$base.offset().top <= 0 && horizontalScrollComplete.indexOf(i) < 0) {
-                        $hTrack = h.$track;
+                        activeHorizontal = horizontals[i];
                         tmpScroll += h.$base.offset().top;
                         $track.css('top', -tmpScroll);
                         oddScrollHorizontal = partScroll;
@@ -223,35 +232,40 @@
                 });
             }
 
-            tmpScrollTotal = tmpScroll + Math.abs(tmpScrollHorizontal);
-
-            horizontalScrollComplete.forEach(i => {
-                tmpScrollTotal += horizontals[i].$track.width() - $(window).width();
-            });
-
-            $scroll.scrollTotal = tmpScrollTotal;
-            $scroll.scrollHorizontal = tmpScrollHorizontal;
-            $scroll.scrollVertical = tmpScroll;
-
-            $scroll.trigger('custom-scroll');
+            updateTotals(tmpScrollHorizontal, tmpScroll);
         }
 
         function refreshHeight() {
             fullHeight = $track.height() - $(window).height();
 
             $horizontal.each(function(){
+                let $track = $(this).find(o.selectors.horizontalTrack);
+
                 let obj = {
                     $base: $(this),
-                    $track: $(this).find(o.selectors.horizontalTrack),
+                    $track: $track,
+                    trackWidth: $track.width(),
                     dir: $(this).data('dir') || 1
                 };
 
                 horizontals.push(obj);
 
-                fullHeight += obj.$track.width() - $(window).width();
+                fullHeight += obj.trackWidth - $(window).width();
             });
 
             $scroll.fullHeight = fullHeight;
+        }
+
+        function updateTotals(x, y) {
+            scrollTotal = y + Math.abs(x);
+
+            horizontalScrollComplete.forEach(i => {
+                scrollTotal += horizontals[i].trackWidth - windowWidth;
+            });
+
+            $scroll.scrollTotal = scrollTotal;
+
+            $scroll.trigger('custom-scroll');
         }
 
         return $scroll;
