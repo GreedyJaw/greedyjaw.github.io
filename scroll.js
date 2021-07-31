@@ -28,18 +28,42 @@
         let windowHeight = $(window).height();
         let windowWidth = $(window).width();
         let moveYDisabled = false;
+        let oldDir = 0;
+        let timer = 0;
 
-        refreshHeight();
+        $horizontal.each(function(){
+            let $track = $(this).find(o.selectors.horizontalTrack);
+
+            let obj = {
+                $base: $(this),
+                $track: $track,
+                dir: $(this).data('dir') || 1
+            };
+
+            horizontals.push(obj);
+        });
 
         $scroll.scrollTotal = scrollTotal;
-        $scroll.scrollHorizontal = scrollHorizontal;
-        $scroll.scrollVertical = scrollVertical;
+
+        resize();
+
+        $(window).bind('resize', resize);
 
         $(document).bind('mousewheel wheel', handleMouseWheel);
 
         function handleMouseWheel(e) {
             let wheelDelta = -getWheelDelta(e);
             let dir = wheelDelta < 0 ? -1 : 1;
+
+            if(oldDir && oldDir !== dir) {
+                moveYDisabled = true;
+                clearInterval(timer);
+                setTimeout(function(){
+                    moveYDisabled = false;
+                }, 1);
+            }
+
+            oldDir = dir;
 
             if(activeHorizontal && !scrollHorizontal && dir < 0) {
                 activeHorizontal = null;
@@ -100,9 +124,9 @@
 
                 updateTotals(scrollHorizontal, scrollVertical);
 
-                setTimeout(function(){
+                timer = setTimeout(function(){
                     moveY(target);
-                }, 1);
+                }, 0);
             }
         }
 
@@ -132,7 +156,7 @@
 
                 setTimeout(function(){
                     moveX(target, dirX);
-                }, 1);
+                }, 0);
             }
         }
 
@@ -235,27 +259,6 @@
             updateTotals(tmpScrollHorizontal, tmpScroll);
         }
 
-        function refreshHeight() {
-            fullHeight = $track.height() - $(window).height();
-
-            $horizontal.each(function(){
-                let $track = $(this).find(o.selectors.horizontalTrack);
-
-                let obj = {
-                    $base: $(this),
-                    $track: $track,
-                    trackWidth: $track.width(),
-                    dir: $(this).data('dir') || 1
-                };
-
-                horizontals.push(obj);
-
-                fullHeight += obj.trackWidth - $(window).width();
-            });
-
-            $scroll.fullHeight = fullHeight;
-        }
-
         function updateTotals(x, y) {
             scrollTotal = y + Math.abs(x);
 
@@ -264,6 +267,23 @@
             });
 
             $scroll.scrollTotal = scrollTotal;
+
+            $scroll.trigger('custom-scroll');
+        }
+
+        function resize() {
+            trackHeight = $track.height();
+            windowHeight = $(window).height();
+            windowWidth = $(window).width();
+            fullHeight = trackHeight - windowHeight;
+
+            horizontals.forEach(h => {
+                h.trackWidth = h.$track.width();
+
+                fullHeight += h.trackWidth - windowWidth;
+            });
+
+            $scroll.fullHeight = fullHeight;
 
             $scroll.trigger('custom-scroll');
         }
