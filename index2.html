@@ -169,6 +169,9 @@
 
         $scroll[0].addEventListener('mousewheel', test, false);
         $scroll[0].addEventListener("DOMMouseScroll", test , false);
+        $scroll[0].addEventListener("touchstart", test , false);
+        $scroll[0].addEventListener("touchend", test , false);
+        $scroll[0].addEventListener("touchmove", test , false);
         // $scroll[0].addEventListener('mousewheel', test, false);
 
         $scroll.on('scroll', function(e){
